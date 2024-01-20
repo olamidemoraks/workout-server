@@ -8,7 +8,11 @@ import cloudinary from "cloudinary";
 export const createWorkout = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { female_image, image } = req.body;
+      const { female_image, image, exercises } = req.body;
+
+      if (exercises.length === 0) {
+        return next(new ErrorHandler("Please add exercises to workout", 400));
+      }
       if (female_image) {
         const myCloud = await cloudinary.v2.uploader.upload(female_image, {
           folder: "workout_female_image",
@@ -99,6 +103,8 @@ export const deleteWorkout = CatchAsyncError(
       if (!workout) {
         return next(new ErrorHandler("Workout doesn't exist", 404));
       }
+
+      await cloudinary.v2.uploader.destroy(workout.image.public_id);
 
       await Workout.findByIdAndDelete(id);
 

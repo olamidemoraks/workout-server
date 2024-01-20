@@ -5,6 +5,7 @@ export interface IExercise extends Document {
   time_base: boolean;
   repetition: number;
   rest: number;
+  sets: number;
 }
 
 interface IWorkout extends Document {
@@ -31,6 +32,10 @@ export const exerciseSchema = new Schema<IExercise>({
   time_base: Boolean,
   repetition: Number,
   rest: Number,
+  sets: {
+    default: 1,
+    type: Number,
+  },
 });
 
 const workoutSchema: Schema<IWorkout> = new mongoose.Schema<IWorkout>(

@@ -17,11 +17,17 @@ export interface IUser extends Document {
     public_id: string;
     url: string;
   };
+  weightHistory: {
+    weight: number;
+    createdAt: Date;
+  }[];
   goals: string;
   isVerified: boolean;
   role: string;
   level: number;
   steps: string;
+  weightMeasure: string;
+  heightMeasure: string;
   comparePassword: (password: string) => Promise<boolean>;
   SignAccessToken: () => string;
   SignRefreshToken: () => string;
@@ -66,6 +72,12 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     weight: {
       type: String,
     },
+    weightHistory: [
+      {
+        weight: Number,
+        createdAt: Date,
+      },
+    ],
     role: {
       type: String,
       default: "user",
@@ -85,6 +97,14 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     },
     level: {
       type: Number,
+    },
+    weightMeasure: {
+      type: String,
+      enum: ["kg", "lg"],
+    },
+    heightMeasure: {
+      type: String,
+      enum: ["cm", "ft"],
     },
   },
   { timestamps: true }

@@ -8,6 +8,8 @@ import ejs from "ejs";
 import sendMail from "../utils/sendMail";
 import { sendToken } from "../utils/jwt";
 import { redis } from "../utils/redis";
+import activityModel from "../models/activity";
+import cloudinary from "cloudinary";
 
 export const getAdminActivationCode = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -268,6 +270,50 @@ export const updateUserProfile = CatchAsyncError(
   }
 );
 
+export const updateUserProfileImage = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.user?._id;
+      const user = await User.findById(id);
+      const { image } = req.body;
+
+      if (!image) {
+        return next(new ErrorHandler("Please provide user image", 400));
+      }
+      if (user?.avatar?.public_id) {
+        await cloudinary.v2.uploader.destroy(user.avatar.public_id);
+      }
+      const myCloud = await cloudinary.v2.uploader.upload(image, {
+        folder: "avatar",
+        overwrite: true,
+      });
+
+      const avatar = {
+        public_id: myCloud.public_id,
+        url: myCloud.secure_url,
+      };
+
+      const updateProfile = await User.findByIdAndUpdate(
+        id,
+        { avatar },
+        {
+          new: true,
+        }
+      );
+      await redis.set(user?._id, JSON.stringify(updateProfile));
+
+      console.log({ updateProfile });
+      console.log({ avatar });
+      res.status(200).json({
+        success: true,
+        message: "Image successfull changed",
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
 export const logoutUser = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -293,10 +339,23 @@ export const getUserInfo = CatchAsyncError(
       const userId = req.user?._id;
       const userJson = await redis.get(userId);
       if (userJson) {
+        // calculate user streaks
+        const activities = await activityModel
+          .find({ userId })
+          .sort("-createdAt");
+
+        const userActivity = activities
+          .map((activity) => ({ activityDate: activity.createdAt }))
+          .sort((a, b) => a.activityDate.getTime() - b.activityDate.getTime());
+        const userStreak = calculateStreak(userActivity);
+
         const user = JSON.parse(userJson as string);
         res.status(200).json({
           success: true,
-          user,
+          user: {
+            ...user,
+            streak: userStreak,
+          },
         });
       }
     } catch (error: any) {
@@ -304,3 +363,55 @@ export const getUserInfo = CatchAsyncError(
     }
   }
 );
+
+// export const getUserStricks = CatchAsyncError(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//       const userId = req.user?._id;
+//       const activities = await activityModel
+//         .find({ userId })
+//         .sort("-createdAt");
+
+//       const userActivity = activities
+//         .map((activity) => ({ activityDate: activity.createdAt }))
+//         .sort((a, b) => a.activityDate.getTime() - b.activityDate.getTime());
+//       const userStreak = calculateStreak(userActivity);
+
+//       res.status(200).json({
+//         success: true,
+//         userStreak,
+//       });
+//     } catch (error: any) {
+//       return next(new ErrorHandler(error.message, 400));
+//     }
+//   }
+// );
+
+const isNextDay = (date1: string, date2: string) => {
+  const nextDay = new Date(
+    new Date(date2).getTime() + 86400000
+  ).toLocaleDateString();
+  return date1 === nextDay;
+};
+
+const calculateStreak = (userActivity: { activityDate: Date }[]) => {
+  let currentStreak = 0;
+  if (userActivity.length === 0) return currentStreak;
+  for (let i = 0; i < userActivity.length; i++) {
+    const activityDate = userActivity[i].activityDate.toLocaleDateString();
+
+    if (i > 0) {
+      const previousActivityDate =
+        userActivity[i - 1].activityDate.toLocaleDateString();
+
+      if (isNextDay(activityDate, previousActivityDate)) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    } else {
+      currentStreak;
+    }
+    return currentStreak;
+  }
+};

@@ -139,7 +139,13 @@ export const deleteExercise = CatchAsyncError(
 export const getExercises = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const exercises = await Exercise.find({}).sort("-createdAt");
+      const { focus_point } = req.query;
+      console.log(focus_point);
+      let searchQuery: any = {};
+      if (focus_point) {
+        searchQuery.focus = focus_point;
+      }
+      const exercises = await Exercise.find(searchQuery).sort("-createdAt");
       res.status(200).json({
         success: true,
         exercises,

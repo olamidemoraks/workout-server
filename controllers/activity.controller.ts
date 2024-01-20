@@ -3,27 +3,76 @@ import { CatchAsyncError } from "../middlewares/catchAsyncError";
 import ErrorHandler from "../utils/ErrorHandler";
 import activityModel from "../models/activity";
 import workoutModel from "../models/workout.model";
+import userModel from "../models/user.model";
+import { redis } from "../utils/redis";
+import Category from "../models/category.model";
+import customWorkoutModel, { IMetrics } from "../models/customWorkout.model";
 
 export const createActivity = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     req.body.userId = req.user?._id;
     try {
-      const { userId, workoutId, totalTime } = req.body;
+      const { userId, workoutId, totalTime, weight, workoutType, feedback } =
+        req.body;
 
       if (!userId && !workoutId) {
         return next(new ErrorHandler("Invalid information", 400));
       }
-      if (totalTime < 1) {
+      if (totalTime < 60) {
         return next(new ErrorHandler("total time less than 1 sec", 400));
       }
-      const workout = await workoutModel.findById(workoutId);
-      const data = {
-        userId,
-        workoutName: workout?.focus_point,
-        totalTime,
-      };
-      const activity = await activityModel.create(data);
-      res.status(201).json({ success: true, activity });
+      if (req.user?.weight !== weight) {
+        const data = {
+          weight,
+          weightHistory: req.user?.weightHistory,
+        };
+        data.weightHistory?.push({
+          weight: weight,
+          createdAt: new Date(),
+        });
+
+        const user = await userModel.findByIdAndUpdate(req.user?._id, data, {
+          new: true,
+        });
+        await redis.set(req.user?._id, JSON.stringify(user));
+      }
+
+      let data;
+      if (workoutType === "default") {
+        const workout = await workoutModel.findById(workoutId);
+        const category = await Category.findById(workout?.focus_point);
+        data = {
+          userId,
+          workoutId: workout?._id,
+          workoutName: category?.title,
+          workoutType,
+          totalTime,
+        };
+        await activityModel.create(data);
+      } else if (workoutType === "customize") {
+        const customizeWorkout = await customWorkoutModel.findById(workoutId);
+        data = {
+          userId,
+          workoutId: customizeWorkout?._id,
+          workoutName: customizeWorkout?.name,
+          workoutType,
+          totalTime,
+        };
+
+        const metricsData: any = {
+          userId,
+          feedback,
+          createdAt: new Date(),
+        };
+
+        customizeWorkout?.metrics.push(metricsData);
+
+        await Promise.all([
+          await activityModel.create(data),
+          await customizeWorkout?.save(),
+        ]);
+      }
+      res.status(201).json({ success: true });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
@@ -47,7 +96,7 @@ export const activityYearReport = CatchAsyncError(
       currentDate.setDate(currentDate.getDate() + 1);
       const endDate = new Date(
         currentDate.getFullYear(),
-        currentDate.getMonth() + 1 - currentDate.getMonth(),
+        currentDate.getMonth() - 10,
         currentDate.getDate()
       );
       const startDate = new Date(

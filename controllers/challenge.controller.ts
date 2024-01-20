@@ -7,6 +7,8 @@ import Exercise from "../models/exercise.model";
 import ChallengProgress from "../models/challengeProgress.model";
 import activityModel from "../models/activity";
 import cron from "node-cron";
+import userModel from "../models/user.model";
+import { redis } from "../utils/redis";
 
 export const createChallenges = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -298,8 +300,13 @@ export const startChallenge = CatchAsyncError(
 export const completedChallenge = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { challengeId, workoutName, totalTime } = req.body;
+      const { challengeId, workoutName, totalTime, weight } = req.body;
       const userId = req.user?._id;
+
+      if (totalTime < 60) {
+        return next(new ErrorHandler("total time less than 1 sec", 400));
+      }
+
       const progress = await ChallengProgress.findOne({ challengeId, userId });
 
       const challengeData = {
@@ -313,6 +320,23 @@ export const completedChallenge = CatchAsyncError(
         userId,
         totalTime,
       };
+
+      if (req.user?.weight !== weight) {
+        const data = {
+          weight,
+          weightHistory: req.user?.weightHistory,
+        };
+        data.weightHistory?.push({
+          weight: weight,
+          createdAt: new Date(),
+        });
+
+        const user = await userModel.findByIdAndUpdate(req.user?._id, data, {
+          new: true,
+        });
+        await redis.set(req.user?._id, JSON.stringify(user));
+      }
+
       if (!progress) {
         await ChallengProgress.create(challengeData);
       } else {

@@ -10,15 +10,12 @@ interface IExercise extends Document {
     public_id: string;
     url: string;
   };
-  instruction_video: {
-    public_id: string;
-    url: string;
-  };
+
   tips: string;
-  body_part: string;
+
   equipment: string;
   location: string;
-  focus: string;
+  focus: string[];
 }
 
 const exerciseSchema: Schema<IExercise> = new mongoose.Schema(
@@ -32,19 +29,16 @@ const exerciseSchema: Schema<IExercise> = new mongoose.Schema(
       public_id: String,
       url: String,
     },
-    instruction_video: {
-      public_id: String,
-      url: String,
-    },
+
     tips: String,
-    body_part: String,
+
     equipment: String,
     location: {
       enum: ["gym", "home"],
       default: "home",
       type: String,
     },
-    focus: String,
+    focus: [String],
   },
   { timestamps: true }
 );

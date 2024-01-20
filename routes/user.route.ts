@@ -10,6 +10,7 @@ import {
   signInAdmin,
   socialAuth,
   updateUserProfile,
+  updateUserProfileImage,
 } from "../controllers/user.controller";
 import { authorizeUser } from "../middlewares/auth";
 
@@ -27,6 +28,7 @@ userRouters.post("/check-user", checkUserExist);
 userRouters.post("/social-auth", socialAuth);
 
 userRouters.put("/update-profile", authorizeUser, updateUserProfile);
+userRouters.put("/update-profile-image", authorizeUser, updateUserProfileImage);
 
 userRouters.get("/user-info", authorizeUser, getUserInfo);
 
