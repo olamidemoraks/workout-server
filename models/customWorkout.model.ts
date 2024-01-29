@@ -11,21 +11,27 @@ interface ICustomWorkout extends Document {
   estimate_time: string;
   location: string;
   creatorId: string;
-  metrics: IMetrics[];
+
+  userMetrics: Map<string, IMetrics>;
 }
 
 export interface IMetrics extends Document {
   userId: string;
   createdAt: Date;
-  feedback: number;
+  feedback: string;
+  difficulty: number;
 }
 
 const metricsSchema = new Schema<IMetrics>({
   userId: String,
   createdAt: Date,
   feedback: {
+    type: String,
+    default: "alright",
+  },
+  difficulty: {
     type: Number,
-    default: 2,
+    default: 0,
   },
 });
 
@@ -51,7 +57,11 @@ const customWorkoutSchema: Schema<ICustomWorkout> = new Schema<ICustomWorkout>(
       default: "home",
       type: String,
     },
-    metrics: [metricsSchema],
+
+    userMetrics: {
+      type: Map,
+      of: metricsSchema,
+    },
   },
   { timestamps: true }
 );

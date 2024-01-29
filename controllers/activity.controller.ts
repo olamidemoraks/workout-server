@@ -15,6 +15,12 @@ export const createActivity = CatchAsyncError(
       const { userId, workoutId, totalTime, weight, workoutType, feedback } =
         req.body;
 
+      const feedbackMode: { [key: number]: string } = {
+        1: "hard",
+        2: "alright",
+        3: "easy",
+      };
+
       if (!userId && !workoutId) {
         return next(new ErrorHandler("Invalid information", 400));
       }
@@ -59,13 +65,43 @@ export const createActivity = CatchAsyncError(
           totalTime,
         };
 
-        const metricsData: any = {
+        let metricsData: any = {
           userId,
-          feedback,
+          feedback: feedbackMode[feedback],
+          difficulty: 0,
           createdAt: new Date(),
         };
 
-        customizeWorkout?.metrics.push(metricsData);
+        if (!customizeWorkout) {
+          console.error("customizeWorkout is undefined");
+        } else if (!customizeWorkout.userMetrics) {
+          customizeWorkout.userMetrics = new Map();
+        }
+
+        const userMetric = customizeWorkout?.userMetrics.get(userId);
+
+        // Ensure that userMetric is defined before accessing its properties
+        if (userMetric) {
+          switch (feedback) {
+            case 1:
+              metricsData.difficulty = (userMetric.difficulty ?? 0) - 5;
+              break;
+            case 2:
+              metricsData.difficulty = userMetric.difficulty ?? 0;
+              break;
+            case 3:
+              metricsData.difficulty = (userMetric.difficulty ?? 0) + 5;
+              break;
+            default:
+              break;
+          }
+        }
+
+        console.log({ metricsData });
+
+        customizeWorkout?.userMetrics.set(userId, metricsData);
+
+        // customizeWorkout?.metrics.push(metricsData);
 
         await Promise.all([
           await activityModel.create(data),

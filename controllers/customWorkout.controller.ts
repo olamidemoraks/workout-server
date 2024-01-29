@@ -108,20 +108,38 @@ export const getCustomWorkoutById = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = req.params.id;
+      const userId = req.user?._id;
 
       const workout = await customWorkoutModel.findById(id);
-      const exercises = await Promise.all(
+      let exercises = await Promise.all(
         workout!.exercises.map(async (value: any) => {
           const exercise = await exerciseModel.findOne({
             _id: value.exercise_id,
           });
-          console.log(exercise);
+
           return {
             ...(exercise as any)?._doc,
             ...(value as any)?._doc,
           };
         })
       );
+      if (!workout) {
+        console.error("workout is undefined");
+      } else if (!workout.userMetrics) {
+        workout.userMetrics = new Map();
+      }
+      const difficulty = workout?.userMetrics.get(userId)?.difficulty;
+
+      console.log({ difficulty });
+
+      if (difficulty) {
+        exercises = exercises.map((exercise) => {
+          return {
+            ...exercise,
+            repetition: exercise.repetition + difficulty,
+          };
+        });
+      }
 
       const workoutWithExercise = {
         ...(workout as any)?._doc,

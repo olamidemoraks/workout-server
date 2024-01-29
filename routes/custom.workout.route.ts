@@ -27,6 +27,10 @@ customWorkoutRoute.delete(
   deleteCustomWorkout
 );
 customWorkoutRoute.get("/get-all-user-workouts/:userId", getUserCustomWorkouts);
-customWorkoutRoute.get("/get-custom-workout/:id", getCustomWorkoutById);
+customWorkoutRoute.get(
+  "/get-custom-workout/:id",
+  authorizeUser,
+  getCustomWorkoutById
+);
 
 export default customWorkoutRoute;

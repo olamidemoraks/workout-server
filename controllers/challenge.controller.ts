@@ -169,6 +169,7 @@ export const getFrontalChallenge = CatchAsyncError(
           return {
             ...(challenge as any)?._doc,
             progress: challengeProgess?.day ?? null,
+            isCompleted: challengeProgess?.isCompleted ?? false,
           };
         })
       );
@@ -368,7 +369,7 @@ cron.schedule("0 3 * * 1-7", async function () {
       updatedAt: { $lt: oneDayAgo },
     },
     {
-      $inc: { day: 1 },
+      $inc: { day: 1, isCompleted: false },
     }
   );
   console.log("Cron job update");
