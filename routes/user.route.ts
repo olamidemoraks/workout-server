@@ -2,13 +2,18 @@ import express from "express";
 import {
   activateUser,
   checkUserExist,
+  followUser,
   getAdminActivationCode,
+  getFollowers,
+  getFollowing,
+  getUser,
   getUserInfo,
   loginUser,
   logoutUser,
   registerUser,
   signInAdmin,
   socialAuth,
+  unfollowUser,
   updateUserProfile,
   updateUserProfileImage,
 } from "../controllers/user.controller";
@@ -32,5 +37,12 @@ userRouters.put("/update-profile-image", authorizeUser, updateUserProfileImage);
 
 userRouters.get("/user-info", authorizeUser, getUserInfo);
 
-userRouters.get("/logout", authorizeUser, logoutUser);
+userRouters.post("/logout", authorizeUser, logoutUser);
+
+userRouters.get("/find-user", getUser);
+
+userRouters.put("/follow-user", authorizeUser, followUser);
+userRouters.put("/unfollow-user", authorizeUser, unfollowUser);
+userRouters.get("/get-following", authorizeUser, getFollowing);
+userRouters.get("/get-follower", authorizeUser, getFollowers);
 export default userRouters;

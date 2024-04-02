@@ -1,6 +1,6 @@
 import { CatchAsyncError } from "../middlewares/catchAsyncError";
 import User, { IUser } from "../models/user.model";
-import { Request, Response, NextFunction } from "express";
+import e, { Request, Response, NextFunction } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
 import jwt, { Secret } from "jsonwebtoken";
 import path from "path";
@@ -158,7 +158,7 @@ export const activateUser = CatchAsyncError(
       sendToken(user, 200, res);
       // res.status(201).json({ success: true });
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 500));
     }
   }
 );
@@ -171,19 +171,26 @@ export const loginUser = CatchAsyncError(
         return next(new ErrorHandler("Please enter email or password", 400));
       }
       const user = await User.findOne({ email }).select("+password");
+
+      if (!user?.password) {
+        return next(
+          new ErrorHandler("Invalid crediential, try with google provider", 401)
+        );
+      }
       if (!user) {
         return next(new ErrorHandler("Invalid email or password", 404));
       }
       console.log(password);
 
       const isPasswordCorrect = await user.comparePassword(password);
+      console.log({ isPasswordCorrect });
       if (!isPasswordCorrect) {
         return next(new ErrorHandler("Invalid email or password", 404));
       }
 
       sendToken(user, 200, res);
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 500));
     }
   }
 );
@@ -205,7 +212,7 @@ export const socialAuth = CatchAsyncError(
         sendToken(user, 200, res);
       }
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 500));
     }
   }
 );
@@ -265,7 +272,7 @@ export const updateUserProfile = CatchAsyncError(
         user: profile,
       });
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 500));
     }
   }
 );
@@ -309,7 +316,7 @@ export const updateUserProfileImage = CatchAsyncError(
         message: "Image successfull changed",
       });
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 500));
     }
   }
 );
@@ -328,7 +335,7 @@ export const logoutUser = CatchAsyncError(
         message: "Logged out successfully",
       });
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 500));
     }
   }
 );
@@ -359,7 +366,7 @@ export const getUserInfo = CatchAsyncError(
         });
       }
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 500));
     }
   }
 );
@@ -382,18 +389,10 @@ export const getUserInfo = CatchAsyncError(
 //         userStreak,
 //       });
 //     } catch (error: any) {
-//       return next(new ErrorHandler(error.message, 400));
+//       return next(new ErrorHandler(error.message, 500));
 //     }
 //   }
 // );
-
-const isNextDay = (date1: string, date2: string) => {
-  const nextDay = new Date(
-    new Date(date2).getTime() + 86400000
-  ).toLocaleDateString();
-  return date1 === nextDay;
-};
-
 const calculateStreak = (userActivity: { activityDate: Date }[]) => {
   let currentStreak = 0;
   if (userActivity.length === 0) return currentStreak;
@@ -415,3 +414,179 @@ const calculateStreak = (userActivity: { activityDate: Date }[]) => {
     return currentStreak;
   }
 };
+
+const isNextDay = (date1: string, date2: string) => {
+  const nextDay = new Date(
+    new Date(date2).getTime() + 86400000
+  ).toLocaleDateString();
+  return date1 === nextDay;
+};
+
+export const getUser = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { search } = req.query;
+      // let queryParams:any = {}
+      // if(search){
+      //   queryParams.username = { $regex: search, $options: "i" }
+      // }
+
+      const users = await User.find({
+        username: { $regex: search, $options: "i" },
+      }).select("username name avatar");
+
+      res.status(200).json({
+        success: true,
+        users,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
+// export const sentFriendRequest = CatchAsyncError(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//       const { id } = req.body;
+//       const userId = req.user?._id;
+//       const friend = await User.findById(id);
+//       const user = await User.findById(userId);
+//       if (!friend || !user) {
+//         return next(new ErrorHandler("user not found!", 401));
+//       }
+
+//       if (!!friend.friendRequestReceive.find((friendId) => friendId === id)) {
+//         friend.friendRequestReceive = friend?.friendRequestReceive.filter(
+//           (friendId) => friendId !== userId
+//         );
+//         user.friendRequestSent = user?.friendRequestSent.filter(
+//           (friendId) => friendId !== id
+//         );
+//       } else {
+//         friend?.friendRequestReceive.push(userId);
+//         user?.friendRequestSent.push(id);
+//       }
+
+//       await Promise.all([await user.save(), await friend.save()]);
+//       res.status(200).json({
+//         success: true,
+//       });
+//     } catch (error: any) {
+//       return next(new ErrorHandler(error.message, 500));
+//     }
+//   }
+// );
+export const followUser = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.body;
+      const userId = req.user?._id;
+      const friend = await User.findById(id);
+      const user = await User.findById(userId);
+      if (!friend || !user) {
+        return next(new ErrorHandler("user not found!", 401));
+      }
+      if (userId == id) {
+        return next(new ErrorHandler("you cannot follow self", 401));
+      }
+
+      console.log({ friend: friend.followers, user: user.following });
+      friend.followers.push(userId);
+      user.following.push(id);
+
+      await Promise.all([await user.save(), await friend.save()]);
+      await redis.set(user?._id, JSON.stringify(user));
+      res.status(200).json({
+        success: true,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+export const unfollowUser = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.body;
+      const userId = req.user?._id;
+      const friend = await User.findById(id);
+      const user = await User.findById(userId);
+      if (!friend || !user) {
+        return next(new ErrorHandler("user not found!", 401));
+      }
+
+      console.log({ friend: friend.followers, user: user.following });
+      friend.followers = friend.followers.filter((_id) => _id !== userId);
+      user.following = user.following.filter((_id) => _id !== id);
+
+      await Promise.all([await user.save(), await friend.save()]);
+
+      await redis.set(user?._id, JSON.stringify(user));
+      res.status(200).json({
+        success: true,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
+export const getFollowing = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?._id;
+      const user = await User.findById(userId);
+      if (!user) {
+        return next(new ErrorHandler("user not found!", 401));
+      }
+
+      const followings = await Promise.all(
+        user.following.map(async (followingId): Promise<any> => {
+          const following = await User.findById(followingId).select(
+            "_id avatar name username"
+          );
+          return {
+            ...(following as any)?._doc,
+          };
+        })
+      );
+
+      res.status(200).json({
+        success: true,
+        followings,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+export const getFollowers = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?._id;
+      const user = await User.findById(userId);
+      if (!user) {
+        return next(new ErrorHandler("user not found!", 401));
+      }
+
+      const followers = await Promise.all(
+        user.followers.map(async (followerId): Promise<any> => {
+          const follower = await User.findById(followerId).select(
+            "_id avatar name username"
+          );
+          return {
+            ...(follower as any)?._doc,
+          };
+        })
+      );
+
+      res.status(200).json({
+        success: true,
+        followers,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);

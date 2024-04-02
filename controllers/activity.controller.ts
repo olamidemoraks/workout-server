@@ -119,6 +119,7 @@ interface IActivity {
   userId: string;
   workoutName: string;
   totalTime: number;
+  count: number;
   createdAt: Date;
 }
 
@@ -163,13 +164,16 @@ export const activityYearReport = CatchAsyncError(
             (entry: IActivity) =>
               areDatesOnSameDay(new Date(entry?.createdAt), new Date(date))
           );
+
           if (sameDate) {
             sameDate.totalTime += currentValue.totalTime;
+            sameDate.count += 1;
           } else {
             accumulator.push({
               createdAt: date,
               totalTime: currentValue.totalTime,
               workoutName: currentValue.workoutName,
+              count: 1,
             });
           }
 

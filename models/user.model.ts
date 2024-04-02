@@ -28,6 +28,8 @@ export interface IUser extends Document {
   steps: string;
   weightMeasure: string;
   heightMeasure: string;
+  followers: string[];
+  following: string[];
   comparePassword: (password: string) => Promise<boolean>;
   SignAccessToken: () => string;
   SignRefreshToken: () => string;
@@ -106,6 +108,12 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       type: String,
       enum: ["cm", "ft"],
     },
+    followers: {
+      type: [String],
+    },
+    following: {
+      type: [String],
+    },
   },
   { timestamps: true }
 );
@@ -126,7 +134,7 @@ userSchema.methods.SignRefreshToken = function () {
 userSchema.methods.comparePassword = async function (
   enterPassword: string
 ): Promise<boolean> {
-  return await bcrypt.compare(enterPassword, this.password);
+  return await bcrypt.compare(enterPassword, this.password || "@__");
 };
 
 const userModel: Model<IUser> = mongoose.model("User", userSchema);

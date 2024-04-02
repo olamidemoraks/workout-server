@@ -263,6 +263,7 @@ export const startChallenge = CatchAsyncError(
       );
 
       const workout = {
+        day: userProgress?.day,
         image: challenge?.image,
         name: challenge?.title,
         _id: challenge?._id,
@@ -317,6 +318,7 @@ export const completedChallenge = CatchAsyncError(
       };
 
       const activityData = {
+        workoutId: challengeId,
         workoutName,
         userId,
         totalTime,
