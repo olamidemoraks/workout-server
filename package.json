@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
-    "start": "node app.js",
+    "start": "node server.ts",
     "build": "tsc"
   },
   "author": "morakinyo david",
