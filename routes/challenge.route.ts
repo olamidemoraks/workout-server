@@ -8,6 +8,7 @@ import {
   getChallengeInfo,
   getCurrentChallenge,
   getFrontalChallenge,
+  pinChallenge,
   startChallenge,
   updateChallenges,
 } from "../controllers/challenge.controller";
@@ -24,6 +25,7 @@ challengeRoute.post("/completed-challenge", authorizeUser, completedChallenge);
 challengeRoute.get("/get-challenge-info/:id", authorizeUser, getChallengeInfo);
 challengeRoute.get("/frontal-challenges", authorizeUser, getFrontalChallenge);
 challengeRoute.get("/current-challenges", authorizeUser, getCurrentChallenge);
-challengeRoute.get("/start-challenges/:id", startChallenge);
+challengeRoute.get("/start-challenges/:id", authorizeUser, startChallenge);
+challengeRoute.put("/pin-challenge", authorizeUser, pinChallenge);
 
 export default challengeRoute;

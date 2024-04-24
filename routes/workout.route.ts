@@ -5,7 +5,8 @@ import {
   deleteWorkout,
   updateWorkout,
   getWorkout,
-  getFreemiumWorkout,
+  getWorkoutByCategoryName,
+  getAllWorkoutBaseOnEachCategory,
 } from "../controllers/workout.controller";
 import { authorizeRoles, authorizeUser } from "../middlewares/auth";
 import { createCustomWorkout } from "../controllers/customWorkout.controller";
@@ -43,6 +44,7 @@ workoutRoute.post(
   createCustomWorkout
 );
 
-workoutRoute.get("/freemium-workout/:name", getFreemiumWorkout);
+workoutRoute.get("/freemium-workout/:name", getWorkoutByCategoryName);
+workoutRoute.get("/category-workouts", getAllWorkoutBaseOnEachCategory);
 
 export default workoutRoute;

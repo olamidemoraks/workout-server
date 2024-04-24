@@ -10,6 +10,10 @@ import { sendToken } from "../utils/jwt";
 import { redis } from "../utils/redis";
 import activityModel from "../models/activity";
 import cloudinary from "cloudinary";
+import {
+  createNotificationService,
+  notificationType,
+} from "../service/notification";
 
 export const getAdminActivationCode = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -46,7 +50,7 @@ export const getAdminActivationCode = CatchAsyncError(
         return next(new ErrorHandler(error.message, 401));
       }
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 401));
+      return next(new ErrorHandler(error.message, 405));
     }
   }
 );
@@ -351,17 +355,11 @@ export const getUserInfo = CatchAsyncError(
           .find({ userId })
           .sort("-createdAt");
 
-        const userActivity = activities
-          .map((activity) => ({ activityDate: activity.createdAt }))
-          .sort((a, b) => a.activityDate.getTime() - b.activityDate.getTime());
-        const userStreak = calculateStreak(userActivity);
-
         const user = JSON.parse(userJson as string);
         res.status(200).json({
           success: true,
           user: {
             ...user,
-            streak: userStreak,
           },
         });
       }
@@ -371,48 +369,53 @@ export const getUserInfo = CatchAsyncError(
   }
 );
 
-// export const getUserStricks = CatchAsyncError(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     try {
-//       const userId = req.user?._id;
-//       const activities = await activityModel
-//         .find({ userId })
-//         .sort("-createdAt");
+export const getUserStreak = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.params.id;
+      const activities = await activityModel
+        .find({ userId })
+        .sort("-createdAt")
+        .limit(25);
 
-//       const userActivity = activities
-//         .map((activity) => ({ activityDate: activity.createdAt }))
-//         .sort((a, b) => a.activityDate.getTime() - b.activityDate.getTime());
-//       const userStreak = calculateStreak(userActivity);
+      const userActivity = activities
+        .map((activity) => ({
+          activityDate: activity.createdAt,
+        }))
+        .sort((a, b) => a.activityDate.getTime() - b.activityDate.getTime());
+      const userStreak = calculateStreak(userActivity);
 
-//       res.status(200).json({
-//         success: true,
-//         userStreak,
-//       });
-//     } catch (error: any) {
-//       return next(new ErrorHandler(error.message, 500));
-//     }
-//   }
-// );
+      res.status(200).json({
+        success: true,
+        streak: userStreak,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
 const calculateStreak = (userActivity: { activityDate: Date }[]) => {
   let currentStreak = 0;
-  if (userActivity.length === 0) return currentStreak;
+  if (userActivity.length === 0) {
+    return currentStreak;
+  }
+
   for (let i = 0; i < userActivity.length; i++) {
     const activityDate = userActivity[i].activityDate.toLocaleDateString();
 
     if (i > 0) {
       const previousActivityDate =
         userActivity[i - 1].activityDate.toLocaleDateString();
-
       if (isNextDay(activityDate, previousActivityDate)) {
-        currentStreak++;
+        currentStreak += 1;
       } else {
-        break;
+        continue;
       }
     } else {
       currentStreak;
     }
-    return currentStreak;
   }
+  return currentStreak;
 };
 
 const isNextDay = (date1: string, date2: string) => {
@@ -492,10 +495,26 @@ export const followUser = CatchAsyncError(
       }
 
       console.log({ friend: friend.followers, user: user.following });
+
+      if (!!user.following.find((_id) => id === _id)) {
+        res.status(200).json({
+          success: true,
+          message: "you have already added friend.",
+        });
+        return;
+      }
       friend.followers.push(userId);
       user.following.push(id);
 
       await Promise.all([await user.save(), await friend.save()]);
+
+      await createNotificationService({
+        userIds: [id],
+        from: userId,
+        type: notificationType.FOLLOW_REQUEST,
+        content: "just followed you.",
+      });
+
       await redis.set(user?._id, JSON.stringify(user));
       res.status(200).json({
         success: true,

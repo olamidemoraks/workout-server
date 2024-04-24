@@ -4,6 +4,11 @@ import ErrorHandler from "../utils/ErrorHandler";
 import cloudinary from "cloudinary";
 import customWorkoutModel from "../models/customWorkout.model";
 import exerciseModel from "../models/exercise.model";
+import {
+  createNotificationService,
+  notificationType,
+} from "../service/notification";
+import mongoose, { mongo } from "mongoose";
 
 export const createCustomWorkout = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -48,8 +53,19 @@ export const getUserCustomWorkouts = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.params.userId;
+      const objectUserId = new mongoose.Types.ObjectId(userId);
       const workouts = await customWorkoutModel.find({ creatorId: userId });
-      res.status(200).json({ success: true, workouts });
+      const customWorkout = await customWorkoutModel
+        .find({})
+        .populate({ path: "creatorId", select: "username name avatar" });
+
+      const allworkout = customWorkout.filter((workout) =>
+        workout.invitedUser.has(userId)
+      );
+
+      res
+        .status(200)
+        .json({ success: true, workouts: [...workouts, ...allworkout] });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
@@ -62,18 +78,14 @@ export const updateCustomWorkout = CatchAsyncError(
       const { id } = req.params;
       const { image, exercises } = req.body;
 
-      if (exercises.length === 0) {
-        return next(new ErrorHandler("Please add exercises to workout", 400));
-      }
-
       const workout = await customWorkoutModel.findById(id);
 
       if (!workout) {
         return next(new ErrorHandler("Workout doesn't exist", 404));
       }
 
-      if (workout?.creatorId !== req.user?._id) {
-        return next(new ErrorHandler("Can't delete another user workout", 404));
+      if (exercises.length === 0) {
+        return next(new ErrorHandler("Please add exercises to workout", 400));
       }
 
       if (typeof image === "string") {
@@ -87,19 +99,118 @@ export const updateCustomWorkout = CatchAsyncError(
         };
       }
 
-      const updatedWorkout = await customWorkoutModel.findByIdAndUpdate(
-        { _id: id },
-        req.body,
-        { new: true }
-      );
+      await customWorkoutModel.findByIdAndUpdate({ _id: id }, req.body, {
+        new: true,
+      });
 
       res.status(200).json({
         success: true,
         message: "Workout Updated",
-        workout: updatedWorkout,
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+export const getInvitedUserFromCustomWorkout = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id;
+      const workout = await customWorkoutModel.findById(id);
+      if (!workout) {
+        return next(new ErrorHandler("Workout doesn't exist", 404));
+      }
+
+      const invitedUser = Array.from(workout?.invitedUser.keys()) ?? [];
+      res.status(200).json({ success: true, users: invitedUser });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+export const inviteFriend = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?._id;
+      const username = req.user?.username;
+
+      const { invitedUser } = req.body as { invitedUser: string[] };
+
+      const workout = await customWorkoutModel.findById(id);
+
+      if (!workout) {
+        return next(new ErrorHandler("Workout doesn't exist", 404));
+      } else if (!workout.invitedUser) {
+        workout.invitedUser = new Map();
+      }
+
+      if (userId !== workout?.creatorId) {
+        return next(new ErrorHandler("Forbided", 400));
+      }
+
+      invitedUser.map((id) => {
+        const invite: any = {
+          id,
+          status: "pending",
+        };
+        workout.invitedUser.set(id, invite);
+      });
+      await workout.save();
+      await createNotificationService({
+        userIds: [...invitedUser],
+        from: userId,
+        type: notificationType.INVITE_REQUEST,
+        content: `${username} invited you to join ${workout.name} ${
+          workout.name.toLowerCase().split(" ").includes("workout")
+            ? ""
+            : "workout"
+        }`,
+        workoutId: id,
+      });
+      res.status(200).json({
+        success: true,
+        message: "Workout Updated",
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+export const inviteResponse = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?._id;
+      if (!userId) {
+        return next(new ErrorHandler("User ID is undefined", 400));
+      }
+      const { id } = req.params;
+      const { status } = req.body;
+      console.log(`response status ${status}`);
+      const workout = await customWorkoutModel.findById(id);
+
+      if (!workout) {
+        return next(new ErrorHandler("Workout doesn't exist", 404));
+      }
+
+      const inviteResponse: any = {
+        id: userId,
+        status,
+      };
+      console.log({ workout, inviteResponse });
+
+      workout.invitedUser.set(userId, inviteResponse);
+
+      await workout.save();
+
+      res.status(200).json({
+        success: true,
+        message: "user responded to request",
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 405));
     }
   }
 );
@@ -148,7 +259,7 @@ export const getCustomWorkoutById = CatchAsyncError(
 
       res.status(200).json({ success: true, workout: workoutWithExercise });
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 405));
     }
   }
 );

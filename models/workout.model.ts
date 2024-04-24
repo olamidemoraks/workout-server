@@ -70,7 +70,7 @@ const workoutSchema: Schema<IWorkout> = new mongoose.Schema<IWorkout>(
       default: "home",
       type: String,
     },
-    focus_point: String,
+    focus_point: { type: String, ref: "Category" },
   },
   { timestamps: true }
 );

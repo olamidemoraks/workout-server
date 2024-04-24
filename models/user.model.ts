@@ -30,6 +30,7 @@ export interface IUser extends Document {
   heightMeasure: string;
   followers: string[];
   following: string[];
+  challengePin: string[];
   comparePassword: (password: string) => Promise<boolean>;
   SignAccessToken: () => string;
   SignRefreshToken: () => string;
@@ -112,6 +113,9 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
       type: [String],
     },
     following: {
+      type: [String],
+    },
+    challengePin: {
       type: [String],
     },
   },

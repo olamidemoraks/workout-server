@@ -11,7 +11,7 @@ interface ICustomWorkout extends Document {
   estimate_time: string;
   location: string;
   creatorId: string;
-
+  invitedUser: Map<string, IinvitedFriend>;
   userMetrics: Map<string, IMetrics>;
 }
 
@@ -35,6 +35,19 @@ const metricsSchema = new Schema<IMetrics>({
   },
 });
 
+interface IinvitedFriend extends Document {
+  id: typeof mongoose.Types.ObjectId;
+  status: "pending" | "accept" | "reject";
+}
+
+const invitedFriendScheme = new Schema<IinvitedFriend>({
+  id: { type: mongoose.Types.ObjectId, ref: "User" },
+  status: {
+    type: String,
+    default: "pending",
+  },
+});
+
 const customWorkoutSchema: Schema<ICustomWorkout> = new Schema<ICustomWorkout>(
   {
     name: {
@@ -44,6 +57,7 @@ const customWorkoutSchema: Schema<ICustomWorkout> = new Schema<ICustomWorkout>(
     creatorId: {
       required: true,
       type: String,
+      ref: "User",
     },
     image: {
       public_id: String,
@@ -57,7 +71,10 @@ const customWorkoutSchema: Schema<ICustomWorkout> = new Schema<ICustomWorkout>(
       default: "home",
       type: String,
     },
-
+    invitedUser: {
+      type: Map,
+      of: invitedFriendScheme,
+    },
     userMetrics: {
       type: Map,
       of: metricsSchema,

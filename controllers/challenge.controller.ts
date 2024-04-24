@@ -156,9 +156,18 @@ export const getFrontalChallenge = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?._id;
-      const challenges = await challengeModel
-        .find()
-        .select("name days image premium title location");
+      const pinnedCategoryId = req.user?.challengePin;
+
+      let challenges;
+      if (pinnedCategoryId?.length === 0) {
+        challenges = await challengeModel
+          .find()
+          .select("name days image premium title location");
+      } else {
+        challenges = await challengeModel
+          .find({ _id: { $in: pinnedCategoryId } })
+          .select("name days image premium title location");
+      }
 
       const challengeUserprogress = await Promise.all(
         challenges.map(async (challenge) => {
@@ -357,6 +366,34 @@ export const completedChallenge = CatchAsyncError(
         success: true,
         message: "progress updated",
       });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+export const pinChallenge = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?._id;
+
+      const challengeId = req.body.id;
+      const user = await userModel.findById(userId);
+
+      if (!user?.challengePin.includes(challengeId)) {
+        user?.challengePin.push(challengeId);
+      } else {
+        user.challengePin = user.challengePin.filter(
+          (id) => id !== challengeId
+        );
+      }
+
+      await user?.save();
+      await redis.set(req.user?._id, JSON.stringify(user));
+
+      res
+        .status(200)
+        .json({ success: true, challenges: user?.challengePin ?? [] });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }

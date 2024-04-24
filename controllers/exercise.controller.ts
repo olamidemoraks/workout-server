@@ -3,6 +3,8 @@ import { CatchAsyncError } from "../middlewares/catchAsyncError";
 import { Response, Request, NextFunction } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
 import cloudinary from "cloudinary";
+import Category from "../models/category.model";
+import { title } from "process";
 
 export const createExercise = CatchAsyncError(async function (
   req: Request,

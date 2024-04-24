@@ -5,7 +5,10 @@ import {
   createCustomWorkout,
   deleteCustomWorkout,
   getCustomWorkoutById,
+  getInvitedUserFromCustomWorkout,
   getUserCustomWorkouts,
+  inviteFriend,
+  inviteResponse,
   updateCustomWorkout,
 } from "../controllers/customWorkout.controller";
 
@@ -20,6 +23,21 @@ customWorkoutRoute.put(
   "/update-custom-workout/:id",
   authorizeUser,
   updateCustomWorkout
+);
+customWorkoutRoute.put(
+  "/custom-workout-invite/:id",
+  authorizeUser,
+  inviteFriend
+);
+customWorkoutRoute.put(
+  "/custom-workout-invite-response/:id",
+  authorizeUser,
+  inviteResponse
+);
+customWorkoutRoute.get(
+  "/get-invited-users/:id",
+  authorizeUser,
+  getInvitedUserFromCustomWorkout
 );
 customWorkoutRoute.delete(
   "/delete-custom-workout/:id",

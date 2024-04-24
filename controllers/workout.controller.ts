@@ -4,6 +4,7 @@ import { CatchAsyncError } from "../middlewares/catchAsyncError";
 import { Response, Request, NextFunction } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
 import cloudinary from "cloudinary";
+import Category from "../models/category.model";
 
 export const createWorkout = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -164,7 +165,7 @@ export const getWorkout = CatchAsyncError(
   }
 );
 
-export const getFreemiumWorkout = CatchAsyncError(
+export const getWorkoutByCategoryName = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name } = req.params;
     try {
@@ -182,16 +183,31 @@ export const getFreemiumWorkout = CatchAsyncError(
     }
   }
 );
-export const getPremiumWorkout = CatchAsyncError(
+export const getAllWorkoutBaseOnEachCategory = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const freemiumWorkout = await Workout.find({ premium: true }).sort(
-        "-createdAt"
+      const categories = await Category.find({})
+        .sort({ title: 1 })
+        .select("_id title");
+
+      const categoryWithWorkout = await Promise.all(
+        categories.map(async (category) => {
+          const workouts = await Workout.find({
+            focus_point: String(category._id),
+          })
+            .sort("difficult_level")
+            .select("image name premium difficult_level");
+
+          const data: { [key: string]: Array<any> } = {};
+          data[category.title] = workouts;
+
+          return data;
+        })
       );
 
       res.status(200).json({
         success: true,
-        workout: freemiumWorkout,
+        workout: categoryWithWorkout,
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));

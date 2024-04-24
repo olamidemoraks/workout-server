@@ -8,6 +8,7 @@ import {
   getFollowing,
   getUser,
   getUserInfo,
+  getUserStreak,
   loginUser,
   logoutUser,
   registerUser,
@@ -37,12 +38,17 @@ userRouters.put("/update-profile-image", authorizeUser, updateUserProfileImage);
 
 userRouters.get("/user-info", authorizeUser, getUserInfo);
 
-userRouters.post("/logout", authorizeUser, logoutUser);
+userRouters.get("/get-streak/:id", authorizeUser, getUserStreak);
+
+userRouters.post("/logout", logoutUser);
 
 userRouters.get("/find-user", getUser);
 
 userRouters.put("/follow-user", authorizeUser, followUser);
+
 userRouters.put("/unfollow-user", authorizeUser, unfollowUser);
+
 userRouters.get("/get-following", authorizeUser, getFollowing);
+
 userRouters.get("/get-follower", authorizeUser, getFollowers);
 export default userRouters;
