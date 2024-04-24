@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "workout exercise app",
   "main": "build/server.js",
-  "type": "module",
+  "type": "commonjs",
   "engines": {
     "node": "18.x"
   },
