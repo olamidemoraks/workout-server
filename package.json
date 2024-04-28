@@ -10,15 +10,10 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
     "start": "node server.js",
-    "build": "rimraf dist && tsc",
-    "ts.check": "tsc --project tsconfig.json",
-    "add-build": "git add dist"
+    "build": "tsc"
+    
   },
-  "pre-commit": [
-    "ts.check",
-    "build",
-    "add-build"
-],
+  
   "author": "morakinyo david",
   "license": "ISC",
   "dependencies": {

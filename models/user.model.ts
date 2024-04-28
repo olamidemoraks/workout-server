@@ -125,7 +125,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
 //sign access token
 userSchema.methods.SignAccessToken = function () {
   return jwt.sign({ id: this._id }, process.env.ACCESS_TOKEN as string, {
-    expiresIn: "1h",
+    expiresIn: "21d",
   });
 };
 //sign refresh token

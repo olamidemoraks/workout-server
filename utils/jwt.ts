@@ -30,15 +30,16 @@ export const sendToken = (user: IUser, status: number, res: Response) => {
 
   redis.set(user._id, JSON.stringify(user), "EX", 604800);
 
-  if (process.env.NODE_ENV === "production") {
-    accessTokenOption.secure = true;
-  }
+  // if (process.env.NODE_ENV === "production") {
+  //   accessTokenOption.secure = true;
+  // }
 
-  res.cookie("access_token", accessToken, accessTokenOption);
-  res.cookie("refresh_token", refreshToken, refreshTokenOption);
+  // res.cookie("access_token", accessToken, accessTokenOption);
+  // res.cookie("refresh_token", refreshToken, refreshTokenOption);
 
   res.status(200).json({
     success: true,
     user,
+    token: accessToken,
   });
 };
