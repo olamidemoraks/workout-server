@@ -27,7 +27,7 @@ app.use(
       "http://localhost:3000",
       "http://localhost:3001",
       "https://workout-client-seven.vercel.app",
-      process.env.CLIENT_API,
+      process.env.CLIENT_API as string,
     ],
     credentials: true,
   })
