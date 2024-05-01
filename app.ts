@@ -2,6 +2,7 @@ require("dotenv").config();
 import express, { NextFunction, Request, Response } from "express";
 export const app = express();
 import cors from "cors";
+import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import userRouters from "./routes/user.route";
@@ -20,16 +21,18 @@ app.use(morgan("common"));
 //cookie parser
 app.use(cookieParser(process.env.ACCESS_TOKEN));
 
+app.use(helmet());
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 //cor
 app.use(
   cors({
+    credentials: true,
     origin: [
+      process.env.CLIENT_API as string,
       "http://localhost:3000",
       "http://localhost:3001",
-      "https://workout-client-seven.vercel.app",
-      process.env.CLIENT_API as string,
     ],
-    credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
 

@@ -54,10 +54,6 @@ export const getUserCustomWorkouts = CatchAsyncError(
     try {
       const userId = req.params.userId;
       const objectUserId = new mongoose.Types.ObjectId(userId);
-      const workouts = await customWorkoutModel
-        .find({ creatorId: userId })
-        .select("creatorId name image")
-        .populate({ path: "creatorId", select: "username name avatar" });
 
       const customWorkout = await customWorkoutModel
         .find({})
@@ -68,7 +64,6 @@ export const getUserCustomWorkouts = CatchAsyncError(
       const allworkout = await Promise.all(
         customWorkout
           .map((workout) => {
-            console.log(typeof workout.creatorId);
             if (
               workout.creatorId !== userId &&
               workout?.invitedUser?.has(userId)
@@ -82,7 +77,6 @@ export const getUserCustomWorkouts = CatchAsyncError(
           })
           .filter((workout) => workout !== undefined)
       );
-      console.log({ allworkout });
 
       res.status(200).json({ success: true, workouts: [...allworkout] });
     } catch (error: any) {

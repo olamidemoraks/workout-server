@@ -4,7 +4,7 @@ import challengeModel from "../models/challenge.model";
 import ErrorHandler from "../utils/ErrorHandler";
 import cloudinary from "cloudinary";
 import Exercise from "../models/exercise.model";
-import ChallengProgress from "../models/challengeProgress.model";
+import ChallengeProgress from "../models/challengeProgress.model";
 import activityModel from "../models/activity";
 import cron from "node-cron";
 import userModel from "../models/user.model";
@@ -171,7 +171,7 @@ export const getFrontalChallenge = CatchAsyncError(
 
       const challengeUserprogress = await Promise.all(
         challenges.map(async (challenge) => {
-          const challengeProgess = await ChallengProgress.findOne({
+          const challengeProgess = await ChallengeProgress.findOne({
             challengeId: challenge._id,
             userId,
           });
@@ -197,7 +197,7 @@ export const getCurrentChallenge = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?._id;
-      const userProgressChallenge = await ChallengProgress.find({ userId });
+      const userProgressChallenge = await ChallengeProgress.find({ userId });
 
       const userCurrentChallenge = await Promise.all(
         userProgressChallenge.map(async (progress) => {
@@ -230,7 +230,7 @@ export const getChallengeInfo = CatchAsyncError(
         .findById(id)
         .select("name days image premium title location");
 
-      const userProgress = await ChallengProgress.findOne({
+      const userProgress = await ChallengeProgress.findOne({
         challengeId: id,
         userId,
       });
@@ -254,7 +254,7 @@ export const startChallenge = CatchAsyncError(
       const userId = req.user?._id;
       const challenge = await challengeModel.findById(id);
 
-      const userProgress = await ChallengProgress.findOne({
+      const userProgress = await ChallengeProgress.findOne({
         challengeId: id,
         userId,
       });
@@ -294,9 +294,9 @@ export const startChallenge = CatchAsyncError(
 //     try {
 //       const { challengeId } = req.body;
 //       const userId = req.user?._id;
-//       const progress = await ChallengProgress.findOne({ challengeId, userId });
+//       const progress = await ChallengeProgress.findOne({ challengeId, userId });
 //       if (!progress) {
-//         await ChallengProgress.create({ challengeId, userId });
+//         await ChallengeProgress.create({ challengeId, userId });
 //         res.status(201).json({
 //           success: true,
 //           message: "progress created",
@@ -318,10 +318,11 @@ export const completedChallenge = CatchAsyncError(
         return next(new ErrorHandler("total time less than 1 sec", 400));
       }
 
-      const progress = await ChallengProgress.findOne({
+      const progress = await ChallengeProgress.findOne({
         challengeId,
         userId,
       }).populate({ path: "challenge", select: "days" });
+
       const challengeData = {
         challengeId,
         isCompleted: true,
@@ -353,15 +354,17 @@ export const completedChallenge = CatchAsyncError(
       }
 
       if (!progress) {
-        await ChallengProgress.create(challengeData);
+        await ChallengeProgress.create(challengeData);
       } else {
-        await ChallengProgress.findByIdAndUpdate(
-          challengeId,
+        const challengeUpdate = await ChallengeProgress.findOneAndUpdate(
+          { challengeId: challengeId },
           {
             $set: challengeData,
           },
           { new: true }
         );
+
+        console.log({ challengeUpdate });
       }
       await activityModel.create(activityData);
 
@@ -405,7 +408,7 @@ export const pinChallenge = CatchAsyncError(
 
 cron.schedule("0 3 * * 1-7", async function () {
   const oneDayAgo = new Date(Date.now() - 1 * 24 * 60 * 1000);
-  await ChallengProgress.updateMany(
+  await ChallengeProgress.updateMany(
     {
       isCompleted: true,
       updatedAt: { $lt: oneDayAgo },
