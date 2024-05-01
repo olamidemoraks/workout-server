@@ -14,6 +14,8 @@ import {
   createNotificationService,
   notificationType,
 } from "../service/notification";
+import userModel from "../models/user.model";
+import ChallengProgress from "../models/challengeProgress.model";
 
 export const getAdminActivationCode = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -226,6 +228,7 @@ export const checkUserExist = CatchAsyncError(
     try {
       const { email } = req.body;
       const user = await User.findOne({ email });
+      console.log({ user });
       if (!user) {
         res.status(200).json({
           success: false,
@@ -235,7 +238,9 @@ export const checkUserExist = CatchAsyncError(
           success: true,
         });
       }
-    } catch (error) {}
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
   }
 );
 
@@ -356,6 +361,20 @@ export const getUserInfo = CatchAsyncError(
           .sort("-createdAt");
 
         const user = JSON.parse(userJson as string);
+
+        const oneDayAgo = new Date(Date.now() - 1 * 24 * 60 * 1000);
+        await ChallengProgress.updateMany(
+          {
+            userId: userId,
+            isCompleted: true,
+            isFinished: false,
+            updatedAt: { $lt: oneDayAgo },
+          },
+          {
+            $inc: { day: 1 },
+            $set: { isCompleted: false },
+          }
+        );
         res.status(200).json({
           success: true,
           user: {
@@ -363,6 +382,23 @@ export const getUserInfo = CatchAsyncError(
           },
         });
       }
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+export const getProfileInfo = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.params.id;
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+      }
+      res.status(200).json({
+        success: true,
+        user,
+      });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
     }
@@ -409,6 +445,7 @@ const calculateStreak = (userActivity: { activityDate: Date }[]) => {
       if (isNextDay(activityDate, previousActivityDate)) {
         currentStreak += 1;
       } else {
+        currentStreak = 0;
         continue;
       }
     } else {
@@ -554,7 +591,7 @@ export const unfollowUser = CatchAsyncError(
 export const getFollowing = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?._id;
+      const userId = req.query.id ?? req.user?._id;
       const user = await User.findById(userId);
       if (!user) {
         return next(new ErrorHandler("user not found!", 401));
@@ -583,7 +620,7 @@ export const getFollowing = CatchAsyncError(
 export const getFollowers = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?._id;
+      const userId = req.query.id ?? req.user?._id;
       const user = await User.findById(userId);
       if (!user) {
         return next(new ErrorHandler("user not found!", 401));

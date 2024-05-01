@@ -55,9 +55,7 @@ const customWorkoutSchema: Schema<ICustomWorkout> = new Schema<ICustomWorkout>(
       type: String,
     },
     creatorId: {
-      required: true,
       type: String,
-      ref: "User",
     },
     image: {
       public_id: String,
@@ -82,6 +80,16 @@ const customWorkoutSchema: Schema<ICustomWorkout> = new Schema<ICustomWorkout>(
   },
   { timestamps: true }
 );
+
+customWorkoutSchema.virtual("creator", {
+  ref: "User",
+  localField: "creatorId",
+  foreignField: "_id",
+  justOne: true,
+});
+
+customWorkoutSchema.set("toObject", { virtuals: true });
+customWorkoutSchema.set("toJSON", { virtuals: true });
 
 const customWorkoutModel: Model<ICustomWorkout> = model(
   "CustomWorkout",

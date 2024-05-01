@@ -1,9 +1,9 @@
 import mongoose, { Schema, model, Model, Document } from "mongoose";
 import { IExercise, exerciseSchema } from "./workout.model";
 
-interface IChallenge extends Document {
+export interface IChallenge extends Document {
   title: string;
-  days: Number;
+  days: number;
   image: {
     public_id: string;
     url: string;

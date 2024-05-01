@@ -126,7 +126,7 @@ interface IActivity {
 export const activityYearReport = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?._id;
+      const userId = req.query.id ?? req.user?._id;
       const currentDate = new Date();
       currentDate.getMonth();
       // set date of tomorrow
@@ -199,12 +199,29 @@ function areDatesOnSameDay(date1: Date, date2: Date) {
   );
 }
 
+export const allActivities = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.query.id ?? req.user?._id;
+      const activities = await activityModel
+        .find({ userId })
+        .sort("-createdAt");
+      res.status(200).json({
+        success: true,
+        activities,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
 export const recentActivities = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?._id;
+      const userId = req.query.id ?? req.user?._id;
       const activities = await activityModel
         .find({ userId })
+        .limit(5)
         .sort("-createdAt");
       res.status(200).json({
         success: true,

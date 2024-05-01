@@ -144,9 +144,7 @@ export const getExercises = CatchAsyncError(
       const { focus_point } = req.query;
       console.log(focus_point);
       let searchQuery: any = {};
-      if (focus_point) {
-        searchQuery.focus = focus_point;
-      }
+      searchQuery.focus = focus_point ?? "abs";
       const exercises = await Exercise.find(searchQuery).sort("-createdAt");
       res.status(200).json({
         success: true,

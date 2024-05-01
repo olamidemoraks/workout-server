@@ -54,18 +54,37 @@ export const getUserCustomWorkouts = CatchAsyncError(
     try {
       const userId = req.params.userId;
       const objectUserId = new mongoose.Types.ObjectId(userId);
-      const workouts = await customWorkoutModel.find({ creatorId: userId });
-      const customWorkout = await customWorkoutModel
-        .find({})
+      const workouts = await customWorkoutModel
+        .find({ creatorId: userId })
+        .select("creatorId name image")
         .populate({ path: "creatorId", select: "username name avatar" });
 
-      const allworkout = customWorkout.filter((workout) =>
-        workout.invitedUser.has(userId)
-      );
+      const customWorkout = await customWorkoutModel
+        .find({})
+        .select("creatorId name image invitedUser")
+        .populate({ path: "creator", select: "username name avatar" })
+        .sort("-updatedAt");
 
-      res
-        .status(200)
-        .json({ success: true, workouts: [...workouts, ...allworkout] });
+      const allworkout = await Promise.all(
+        customWorkout
+          .map((workout) => {
+            console.log(typeof workout.creatorId);
+            if (
+              workout.creatorId !== userId &&
+              workout?.invitedUser?.has(userId)
+            ) {
+              return workout;
+            } else if (workout.creatorId === userId) {
+              return workout;
+            } else {
+              return;
+            }
+          })
+          .filter((workout) => workout !== undefined)
+      );
+      console.log({ allworkout });
+
+      res.status(200).json({ success: true, workouts: [...allworkout] });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }

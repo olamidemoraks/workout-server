@@ -6,6 +6,7 @@ import {
   getAdminActivationCode,
   getFollowers,
   getFollowing,
+  getProfileInfo,
   getUser,
   getUserInfo,
   getUserStreak,
@@ -37,6 +38,7 @@ userRouters.put("/update-profile", authorizeUser, updateUserProfile);
 userRouters.put("/update-profile-image", authorizeUser, updateUserProfileImage);
 
 userRouters.get("/user-info", authorizeUser, getUserInfo);
+userRouters.get("/profile-info/:id", authorizeUser, getProfileInfo);
 
 userRouters.get("/get-streak/:id", authorizeUser, getUserStreak);
 

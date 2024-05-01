@@ -1,4 +1,5 @@
 import { Schema, Model, Document, model } from "mongoose";
+import { IChallenge } from "./challenge.model";
 
 interface IChallengeProgress extends Document {
   challengeId: string;
@@ -6,6 +7,9 @@ interface IChallengeProgress extends Document {
   day: number;
   isCompleted: boolean;
   createdAt: Date;
+  updatedAt: Date;
+  isFinished: boolean;
+  challenge: IChallenge;
 }
 
 const challengeProgress = new Schema<IChallengeProgress>(
@@ -26,9 +30,23 @@ const challengeProgress = new Schema<IChallengeProgress>(
       type: Boolean,
       default: false,
     },
+    isFinished: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
+
+challengeProgress.virtual("challenge", {
+  ref: "Challenge",
+  localField: "challengeId",
+  foreignField: "_id",
+  justOne: true,
+});
+
+challengeProgress.set("toObject", { virtuals: true });
+challengeProgress.set("toJSON", { virtuals: true });
 
 const challengeProgressModel: Model<IChallengeProgress> = model(
   "ChallengeProgress",

@@ -37,7 +37,7 @@ export const authorizeUser = async (
     req.user = JSON.parse(user);
     next();
   } catch (error) {
-    throw new ErrorHandler("Authentication Error", 401);
+    return new ErrorHandler("Authentication Error", 401);
   }
 };
 

@@ -318,12 +318,15 @@ export const completedChallenge = CatchAsyncError(
         return next(new ErrorHandler("total time less than 1 sec", 400));
       }
 
-      const progress = await ChallengProgress.findOne({ challengeId, userId });
-
+      const progress = await ChallengProgress.findOne({
+        challengeId,
+        userId,
+      }).populate({ path: "challenge", select: "days" });
       const challengeData = {
         challengeId,
         isCompleted: true,
         userId,
+        isFinished: progress!.day >= progress!.challenge.days ? true : false,
       };
 
       const activityData = {
