@@ -5,7 +5,7 @@ let onlineUsers: Map<string, string> = new Map();
 export const socketServer = (server: any) => {
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:3000",
+      origin: ["http://localhost:3000", process.env.CLIENT_API as string],
     },
   });
 
