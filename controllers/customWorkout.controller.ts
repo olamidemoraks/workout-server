@@ -64,11 +64,16 @@ export const getUserCustomWorkouts = CatchAsyncError(
       const allworkout = await Promise.all(
         customWorkout
           .map((workout) => {
+            console.log({ custom: workout?.invitedUser });
             if (
               workout.creatorId !== userId &&
               workout?.invitedUser?.has(userId)
             ) {
-              return workout;
+              for (let [key, value] of workout?.invitedUser) {
+                if (value.status === "accept") {
+                  return workout;
+                }
+              }
             } else if (workout.creatorId === userId) {
               return workout;
             } else {
@@ -135,7 +140,12 @@ export const getInvitedUserFromCustomWorkout = CatchAsyncError(
         return next(new ErrorHandler("Workout doesn't exist", 404));
       }
 
-      const invitedUser = Array.from(workout?.invitedUser.keys()) ?? [];
+      const invitedUser = [];
+      for (let [key, value] of workout?.invitedUser) {
+        if (value.status === "accept") {
+          invitedUser.push(key);
+        }
+      }
       res.status(200).json({ success: true, users: invitedUser });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));

@@ -46,6 +46,7 @@ export const createNotificationService = async ({
       type,
       content,
       from,
+      workoutId,
     });
   }
 };
