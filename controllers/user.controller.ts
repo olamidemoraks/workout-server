@@ -268,6 +268,19 @@ export const updateUserProfile = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user;
+      const username = req.body.username;
+      if (username) {
+        if (username === user?.username) {
+          return;
+        }
+        const usernames = await User.find({ username }).select("username");
+        const checkUsernameExist = usernames.filter((u) => u._id !== user?._id);
+        if (checkUsernameExist.length > 0) {
+          return next(
+            new ErrorHandler(`${username} has been used already`, 400)
+          );
+        }
+      }
       const profile = await User.findByIdAndUpdate(
         { _id: user?._id },
         { ...req.body },

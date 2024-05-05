@@ -31,6 +31,7 @@ export interface IUser extends Document {
   followers: string[];
   following: string[];
   challengePin: string[];
+  streakApperanceType: number;
   comparePassword: (password: string) => Promise<boolean>;
   SignAccessToken: () => string;
   SignRefreshToken: () => string;
@@ -117,6 +118,10 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     },
     challengePin: {
       type: [String],
+    },
+    streakApperanceType: {
+      type: Number,
+      default: 1,
     },
   },
   { timestamps: true }
