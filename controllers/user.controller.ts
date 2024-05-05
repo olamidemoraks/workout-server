@@ -411,26 +411,29 @@ export const getUserStreak = CatchAsyncError(
       const userId = req.params.id;
       const activities = await activityModel
         .find({ userId })
-        .sort("-createdAt")
-        .limit(25);
+        .sort("-createdAt");
 
       const userActivity = activities
         .map((activity) => ({
           activityDate: activity.createdAt,
         }))
         .sort((a, b) => a.activityDate.getTime() - b.activityDate.getTime());
-      const userStreak = calculateStreak(userActivity);
+      const userStreak = calculateCurrentStreak(userActivity);
+      const userLongestStreak = calculateLongestStreak(userActivity);
 
       res.status(200).json({
         success: true,
         streak: userStreak,
+        longestStreak: userLongestStreak,
+        totalWorkout: userActivity.length,
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
     }
   }
 );
-const calculateStreak = (userActivity: { activityDate: Date }[]) => {
+
+const calculateCurrentStreak = (userActivity: { activityDate: Date }[]) => {
   let currentStreak = 0;
   if (userActivity.length === 0) {
     return currentStreak;
@@ -446,6 +449,29 @@ const calculateStreak = (userActivity: { activityDate: Date }[]) => {
         currentStreak += 1;
       } else {
         currentStreak = 0;
+        continue;
+      }
+    } else {
+      currentStreak;
+    }
+  }
+  return currentStreak;
+};
+const calculateLongestStreak = (userActivity: { activityDate: Date }[]) => {
+  let currentStreak = 0;
+  if (userActivity.length === 0) {
+    return currentStreak;
+  }
+
+  for (let i = 0; i < userActivity.length; i++) {
+    const activityDate = userActivity[i].activityDate.toLocaleDateString();
+
+    if (i > 0) {
+      const previousActivityDate =
+        userActivity[i - 1].activityDate.toLocaleDateString();
+      if (isNextDay(activityDate, previousActivityDate)) {
+        currentStreak += 1;
+      } else {
         continue;
       }
     } else {
