@@ -429,69 +429,56 @@ export const getUserStreak = CatchAsyncError(
       const userActivity = activities
         .map((activity) => ({
           activityDate: activity.createdAt,
+          date: activity.createdAt.toLocaleDateString(),
         }))
         .sort((a, b) => a.activityDate.getTime() - b.activityDate.getTime());
-      const userStreak = calculateCurrentStreak(userActivity);
-      const userLongestStreak = calculateLongestStreak(userActivity);
+
+      const totalWorkoutDays = removeDuplicates(userActivity, "date");
+      const [userStreak, userLongestStreak] =
+        calculateLongestStreak(totalWorkoutDays);
 
       res.status(200).json({
         success: true,
         streak: userStreak,
         longestStreak: userLongestStreak,
-        totalWorkout: userActivity.length,
+        totalWorkout: totalWorkoutDays.length,
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
     }
   }
 );
-
-const calculateCurrentStreak = (userActivity: { activityDate: Date }[]) => {
-  let currentStreak = 0;
-  if (userActivity.length === 0) {
-    return currentStreak;
-  }
-
-  for (let i = 0; i < userActivity.length; i++) {
-    const activityDate = userActivity[i].activityDate.toLocaleDateString();
-
-    if (i > 0) {
-      const previousActivityDate =
-        userActivity[i - 1].activityDate.toLocaleDateString();
-      if (isNextDay(activityDate, previousActivityDate)) {
-        currentStreak += 1;
-      } else {
-        currentStreak = 0;
-        continue;
-      }
-    } else {
-      currentStreak;
-    }
-  }
-  return currentStreak;
-};
+function removeDuplicates(array: any[], prop: string) {
+  const uniqueMap = new Map();
+  array.forEach((item) => uniqueMap.set(item[prop], item));
+  return Array.from(uniqueMap.values());
+}
 const calculateLongestStreak = (userActivity: { activityDate: Date }[]) => {
-  let currentStreak = 0;
+  let currentStreak = 1;
+  let longestStreak = 1;
   if (userActivity.length === 0) {
-    return currentStreak;
+    return [0, 0];
   }
 
-  for (let i = 0; i < userActivity.length; i++) {
+  for (let i = 1; i < userActivity.length; i++) {
     const activityDate = userActivity[i].activityDate.toLocaleDateString();
+    const previousActivityDate =
+      userActivity[i - 1].activityDate.toLocaleDateString();
 
-    if (i > 0) {
-      const previousActivityDate =
-        userActivity[i - 1].activityDate.toLocaleDateString();
-      if (isNextDay(activityDate, previousActivityDate)) {
-        currentStreak += 1;
-      } else {
-        continue;
-      }
+    const nextDay = isNextDay(activityDate, previousActivityDate);
+
+    console.log({ nextDay });
+    if (nextDay) {
+      currentStreak++;
     } else {
-      currentStreak;
+      longestStreak = Math.max(longestStreak, currentStreak);
+      currentStreak = 1;
     }
   }
-  return currentStreak;
+
+  longestStreak = Math.max(longestStreak, currentStreak);
+
+  return [currentStreak, longestStreak];
 };
 
 const isNextDay = (date1: string, date2: string) => {
