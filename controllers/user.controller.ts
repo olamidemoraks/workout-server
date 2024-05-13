@@ -365,7 +365,11 @@ export const logoutUser = CatchAsyncError(
 export const getUserInfo = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.user?._id;
+      const user = req.user;
+      const userId = user?._id;
+      if (!user) {
+        return next(new ErrorHandler("user not authenticated", 401));
+      }
       const userJson = await redis.get(userId);
       if (userJson) {
         // calculate user streaks
