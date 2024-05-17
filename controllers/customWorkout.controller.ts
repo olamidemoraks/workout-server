@@ -64,7 +64,6 @@ export const getUserCustomWorkouts = CatchAsyncError(
       const allworkout = await Promise.all(
         customWorkout
           .map((workout) => {
-            console.log({ custom: workout?.invitedUser });
             if (
               workout.creatorId !== userId &&
               workout?.invitedUser?.has(userId)

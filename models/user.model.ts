@@ -97,7 +97,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     steps: {
       type: String,
       default: "gender",
-      // start, gender, age, weight, level, completed
+      // start, gender, age, weight, level, done
     },
     level: {
       type: Number,
