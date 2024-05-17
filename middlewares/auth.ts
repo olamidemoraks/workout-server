@@ -18,8 +18,11 @@ export const authorizeUser = async (
     }
     token = authHeader?.split(" ")[1];
   }
-  if (!token)
-    throw new ErrorHandler("Please login to access this resources", 401);
+
+  console.log({ token });
+
+  if (!token || token == "null")
+    return next(new ErrorHandler("Please login to access this resources", 401));
 
   try {
     const decoded = jwt.verify(

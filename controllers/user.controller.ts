@@ -251,11 +251,10 @@ interface IActivationToken {
 
 const createActivationToken = (user: any): IActivationToken => {
   const activationCode = Math.floor(1000 * Math.random() * 90000).toString();
-  console.log(activationCode);
   const token = jwt.sign(
     { user, activationCode },
     process.env.ACTIVATION_SECRET as Secret,
-    { expiresIn: "20m" }
+    { expiresIn: "10m" }
   );
 
   return {
@@ -287,7 +286,7 @@ export const updateUserProfile = CatchAsyncError(
         { new: true }
       );
 
-      await redis.set(user?._id, JSON.stringify(profile));
+      await redis.set(user?._id, JSON.stringify(profile), "EX", 604800);
 
       res.status(200).json({
         success: true,
@@ -329,7 +328,7 @@ export const updateUserProfileImage = CatchAsyncError(
           new: true,
         }
       );
-      await redis.set(user?._id, JSON.stringify(updateProfile));
+      await redis.set(user?._id, JSON.stringify(updateProfile), "EX", 604800);
 
       console.log({ updateProfile });
       console.log({ avatar });
@@ -371,6 +370,10 @@ export const getUserInfo = CatchAsyncError(
         return next(new ErrorHandler("user not authenticated", 401));
       }
       const userJson = await redis.get(userId);
+      if (!userJson) {
+        return next(new ErrorHandler("user not authenticated", 401));
+      }
+
       if (userJson) {
         // calculate user streaks
         const activities = await activityModel
@@ -582,7 +585,7 @@ export const followUser = CatchAsyncError(
         content: "just followed you.",
       });
 
-      await redis.set(user?._id, JSON.stringify(user));
+      await redis.set(user?._id, JSON.stringify(user), "EX", 604800);
       res.status(200).json({
         success: true,
       });
@@ -608,7 +611,7 @@ export const unfollowUser = CatchAsyncError(
 
       await Promise.all([await user.save(), await friend.save()]);
 
-      await redis.set(user?._id, JSON.stringify(user));
+      await redis.set(user?._id, JSON.stringify(user), "EX", 604800);
       res.status(200).json({
         success: true,
       });
