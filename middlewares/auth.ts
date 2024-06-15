@@ -14,7 +14,9 @@ export const authorizeUser = async (
   if (!token) {
     const authHeader = req.headers.authorization;
     if (!authHeader && authHeader?.startsWith("Bearer")) {
-      throw new ErrorHandler("Please login to access this resources", 401);
+      return next(
+        new ErrorHandler("Please login to access this resources", 401)
+      );
     }
     token = authHeader?.split(" ")[1];
   }
