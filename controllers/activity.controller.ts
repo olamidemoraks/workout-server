@@ -4,7 +4,7 @@ import ErrorHandler from "../utils/ErrorHandler";
 import activityModel from "../models/activity";
 import workoutModel from "../models/workout.model";
 import userModel from "../models/user.model";
-import { redis } from "../utils/redis";
+// import { redis } from "../utils/redis";
 import Category from "../models/category.model";
 import customWorkoutModel, { IMetrics } from "../models/customWorkout.model";
 
@@ -40,7 +40,7 @@ export const createActivity = CatchAsyncError(
         const user = await userModel.findByIdAndUpdate(req.user?._id, data, {
           new: true,
         });
-        await redis.set(req.user?._id, JSON.stringify(user));
+        // await redis.set(req.user?._id, JSON.stringify(user));
       }
 
       let data;

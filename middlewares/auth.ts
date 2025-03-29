@@ -1,8 +1,9 @@
 import { Response, Request, NextFunction } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { redis } from "../utils/redis";
+// import { redis } from "../utils/redis";
 import { accessTokenOption, refreshTokenOption } from "../utils/jwt";
+import User from "../models/user.model";
 
 export const authorizeUser = async (
   req: Request,
@@ -32,13 +33,14 @@ export const authorizeUser = async (
       process.env.ACCESS_TOKEN as string
     ) as JwtPayload;
 
-    const user = await redis.get(decoded.id);
+    const user = await User.findById(decoded.id);
+    // const user = await redis.get(decoded.id);
     if (!user) {
       return next(
         new ErrorHandler("Please login to access this resources ", 400)
       );
     }
-    req.user = JSON.parse(user);
+    req.user = user;
     next();
   } catch (error) {
     return next(new ErrorHandler("Authentication Error", 401));

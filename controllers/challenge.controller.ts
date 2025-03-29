@@ -8,7 +8,7 @@ import ChallengeProgress from "../models/challengeProgress.model";
 import activityModel from "../models/activity";
 import cron from "node-cron";
 import userModel from "../models/user.model";
-import { redis } from "../utils/redis";
+// import { redis } from "../utils/redis";
 
 export const createChallenges = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -350,7 +350,7 @@ export const completedChallenge = CatchAsyncError(
         const user = await userModel.findByIdAndUpdate(req.user?._id, data, {
           new: true,
         });
-        await redis.set(req.user?._id, JSON.stringify(user));
+        // await redis.set(req.user?._id, JSON.stringify(user));
       }
 
       if (!progress) {
@@ -395,7 +395,7 @@ export const pinChallenge = CatchAsyncError(
       }
 
       await user?.save();
-      await redis.set(req.user?._id, JSON.stringify(user));
+      // await redis.set(req.user?._id, JSON.stringify(user));
 
       res
         .status(200)

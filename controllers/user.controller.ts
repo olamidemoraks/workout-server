@@ -7,7 +7,7 @@ import path from "path";
 import ejs from "ejs";
 import sendMail from "../utils/sendMail";
 import { sendToken } from "../utils/jwt";
-import { redis } from "../utils/redis";
+// import { redis } from "../utils/redis";
 import activityModel from "../models/activity";
 import cloudinary from "cloudinary";
 import {
@@ -286,7 +286,7 @@ export const updateUserProfile = CatchAsyncError(
         { new: true }
       );
 
-      await redis.set(user?._id, JSON.stringify(profile), "EX", 604800);
+      // await redis.set(user?._id, JSON.stringify(profile), "EX", 604800);
 
       res.status(200).json({
         success: true,
@@ -328,7 +328,7 @@ export const updateUserProfileImage = CatchAsyncError(
           new: true,
         }
       );
-      await redis.set(user?._id, JSON.stringify(updateProfile), "EX", 604800);
+      // await redis.set(user?._id, JSON.stringify(updateProfile), "EX", 604800);
 
       console.log({ updateProfile });
       console.log({ avatar });
@@ -349,7 +349,7 @@ export const logoutUser = CatchAsyncError(
         res.cookie("refresh_token", "", { maxAge: 1 });
       console.log("Logout");
       const userId = req.user?._id || "";
-      redis.del(userId);
+      // redis.del(userId);
 
       res.status(200).json({
         success: true,
@@ -369,39 +369,36 @@ export const getUserInfo = CatchAsyncError(
       if (!user) {
         return next(new ErrorHandler("user not authenticated", 401));
       }
-      const userJson = await redis.get(userId);
-      if (!userJson) {
-        return next(new ErrorHandler("user not authenticated", 401));
-      }
+      // const userJson = await redis.get(userId);
+      // if (!userJson) {
+      //   return next(new ErrorHandler("user not authenticated", 401));
+      // }
 
-      if (userJson) {
-        // calculate user streaks
-        const activities = await activityModel
-          .find({ userId })
-          .sort("-createdAt");
+      // if (userJson) {
+      // calculate user streaks
+      const activities = await activityModel
+        .find({ userId })
+        .sort("-createdAt");
 
-        const user = JSON.parse(userJson as string);
-
-        const oneDayAgo = new Date(Date.now() - 1 * 24 * 60 * 1000);
-        await ChallengProgress.updateMany(
-          {
-            userId: userId,
-            isCompleted: true,
-            isFinished: false,
-            updatedAt: { $lt: oneDayAgo },
-          },
-          {
-            $inc: { day: 1 },
-            $set: { isCompleted: false },
-          }
-        );
-        res.status(200).json({
-          success: true,
-          user: {
-            ...user,
-          },
-        });
-      }
+      const oneDayAgo = new Date(Date.now() - 1 * 24 * 60 * 1000);
+      await ChallengProgress.updateMany(
+        {
+          userId: userId,
+          isCompleted: true,
+          isFinished: false,
+          updatedAt: { $lt: oneDayAgo },
+        },
+        {
+          $inc: { day: 1 },
+          $set: { isCompleted: false },
+        }
+      );
+      res.status(200).json({
+        success: true,
+        user: {
+          ...user,
+        },
+      });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
     }
@@ -585,7 +582,7 @@ export const followUser = CatchAsyncError(
         content: "just followed you.",
       });
 
-      await redis.set(user?._id, JSON.stringify(user), "EX", 604800);
+      // await redis.set(user?._id, JSON.stringify(user), "EX", 604800);
       res.status(200).json({
         success: true,
       });
@@ -611,7 +608,7 @@ export const unfollowUser = CatchAsyncError(
 
       await Promise.all([await user.save(), await friend.save()]);
 
-      await redis.set(user?._id, JSON.stringify(user), "EX", 604800);
+      // await redis.set(user?._id, JSON.stringify(user), "EX", 604800);
       res.status(200).json({
         success: true,
       });

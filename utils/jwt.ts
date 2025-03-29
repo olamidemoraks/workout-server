@@ -1,6 +1,5 @@
 import { IUser } from "../models/user.model";
 import { Response } from "express";
-import { redis } from "./redis";
 require("dotenv").config();
 
 interface ITokenOptions {
@@ -28,7 +27,7 @@ export const sendToken = (user: IUser, status: number, res: Response) => {
   const accessToken = user.SignAccessToken();
   const refreshToken = user.SignRefreshToken();
 
-  redis.set(user._id, JSON.stringify(user), "EX", 604800);
+  // redis.set(user._id, JSON.stringify(user), "EX", 604800);
 
   // if (process.env.NODE_ENV === "production") {
   //   accessTokenOption.secure = true;
