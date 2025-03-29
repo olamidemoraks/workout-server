@@ -395,9 +395,7 @@ export const getUserInfo = CatchAsyncError(
       );
       res.status(200).json({
         success: true,
-        user: {
-          ...user,
-        },
+        user,
       });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
