@@ -263,27 +263,56 @@ const createActivationToken = (user: any): IActivationToken => {
   };
 };
 
+// Fields users can edit through /update-profile (edit profile, onboarding
+// steps, streak style). Email, password, role, verification, followers,
+// pins, avatar and weight history all have their own flows.
+const EDITABLE_PROFILE_FIELDS = [
+  "name",
+  "username",
+  "age",
+  "gender",
+  "goals",
+  "height",
+  "weight",
+  "level",
+  "weightMeasure",
+  "heightMeasure",
+  "steps",
+  "streakApperanceType",
+];
+
 export const updateUserProfile = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user;
       const username = req.body.username;
-      if (username) {
-        if (username === user?.username) {
-          return;
-        }
+      // Only check availability when the username actually changes; an
+      // unchanged username used to return here without sending a response.
+      if (username && username !== user?.username) {
         const usernames = await User.find({ username }).select("username");
-        const checkUsernameExist = usernames.filter((u) => u._id !== user?._id);
+        const checkUsernameExist = usernames.filter(
+          (u) => String(u._id) !== String(user?._id)
+        );
         if (checkUsernameExist.length > 0) {
           return next(
             new ErrorHandler(`${username} has been used already`, 400)
           );
         }
       }
+      // Only copy fields this endpoint is meant to change. Spreading req.body
+      // let users overwrite anything (email, role, followers, or an unhashed
+      // password, since findByIdAndUpdate skips the model's save hooks).
+      const updates: Record<string, unknown> = {};
+      for (const field of EDITABLE_PROFILE_FIELDS) {
+        if (req.body?.[field] !== undefined) {
+          updates[field] = req.body[field];
+        }
+      }
+
       const profile = await User.findByIdAndUpdate(
         { _id: user?._id },
-        { ...req.body },
-        { new: true }
+        updates,
+        { new: true, runValidators: true }
       );
 
       // await redis.set(user?._id, JSON.stringify(profile), "EX", 604800);

@@ -104,7 +104,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema(
     },
     weightMeasure: {
       type: String,
-      enum: ["kg", "lg"],
+      enum: ["kg", "lb"],
     },
     heightMeasure: {
       type: String,
