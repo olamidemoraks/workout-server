@@ -207,6 +207,7 @@ export const getCurrentChallenge = CatchAsyncError(
           return {
             ...(userChallenge as any)?._doc,
             progress: progress?.day ?? null,
+            isCompleted: progress?.isCompleted ?? false,
           };
         })
       );

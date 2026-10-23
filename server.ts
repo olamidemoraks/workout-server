@@ -14,8 +14,8 @@ cloudinary.config({
   api_secret: process.env.CLOUD_SECRET_KEY,
 });
 
-server.listen(process.env.PORT, () => {
-  console.log(`Server is running at port ${process.env.PORT}`);
+server.listen(process.env.PORT || 4000, () => {
+  console.log(`Server is running at port ${process.env.PORT || 4000}`);
   connectDB();
 });
 
