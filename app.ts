@@ -14,6 +14,7 @@ import challengeRoute from "./routes/challenge.route";
 import categoryRouter from "./routes/category.route";
 import customWorkoutRoute from "./routes/custom.workout.route";
 import notificationRoute from "./routes/notification.route";
+import programRoute from "./routes/program.route";
 
 app.use(express.json({ limit: "50mb" }));
 
@@ -45,7 +46,8 @@ app.use(
   challengeRoute,
   categoryRouter,
   customWorkoutRoute,
-  notificationRoute
+  notificationRoute,
+  programRoute
 );
 
 app.get("/", (req: Request, res: Response, next: NextFunction) => {
